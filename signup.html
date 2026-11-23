@@ -6,6 +6,8 @@
     <title>Sign Up & Inquiries | AutoHome</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -51,7 +53,7 @@
                 <h2>Customer Inquiry Form</h2>
                 <p>Enter your contact details below to get started.</p>
 
-                <form action="#" method="POST" class="inquiry-form">
+                <form id="inquiry-form" class="inquiry-form">
                     <div class="form-group">
                         <label for="name">Full Name</label>
                         <input type="text" id="name" name="name" placeholder="John Doe" required>
@@ -64,7 +66,7 @@
 
                     <div class="form-group">
                         <label for="mobile">Mobile Number</label>
-                        <input type="tel" id="mobile" name="mobile" placeholder="+1 (555) 234-5678" required>
+                        <input type="tel" id="mobile" name="mobile" placeholder="+91 98765 43210" required>
                     </div>
 
                     <div class="form-group">
@@ -72,8 +74,11 @@
                         <textarea id="address" name="address" rows="3" placeholder="123 Smart Street, Apt 4B, City, State" required></textarea>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-full">Submit Inquiry</button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary btn-full">Submit Inquiry</button>
                 </form>
+
+                <!-- Status / Submitted Details Box -->
+                <div id="status-message" class="status-box" style="display: none;"></div>
             </div>
 
         </div>
@@ -96,6 +101,67 @@
             <p>&copy; 2026 AutoHome Technologies Inc. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Supabase Form Submission Logic -->
+    <script>
+        // Replace these with your actual Supabase Project URL and Anon Key
+        const SUPABASE_URL = 'https://fkdnkinnzsqqjskblrvz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9z8etfO6i755rvwi8Vc5ug_nffH3QLk';
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('inquiry-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusBox = document.getElementById('status-message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Disable button during submission
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            statusBox.style.display = 'none';
+
+            // Collect form values
+            const inquiryData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                mobile: document.getElementById('mobile').value.trim(),
+                address: document.getElementById('address').value.trim()
+            };
+
+            // Insert into Supabase 'inquiries' table
+            const { data, error } = await supabaseClient
+                .from('inquiries')
+                .insert([inquiryData])
+                .select();
+
+            if (error) {
+                statusBox.className = 'status-box error';
+                statusBox.innerHTML = `<strong>Submission Failed:</strong> ${error.message}`;
+                statusBox.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Inquiry';
+            } else {
+                const saved = data[0];
+                statusBox.className = 'status-box success';
+                statusBox.innerHTML = `
+                    <h3>✔ Inquiry Saved to Supabase!</h3>
+                    <p>Thank you, <strong>${saved.name}</strong>. Here are your submitted details:</p>
+                    <ul>
+                        <li><strong>Inquiry ID:</strong> #${saved.id}</li>
+                        <li><strong>Email:</strong> ${saved.email}</li>
+                        <li><strong>Mobile:</strong> ${saved.mobile}</li>
+                        <li><strong>Address:</strong> ${saved.address}</li>
+                    </ul>
+                `;
+                statusBox.style.display = 'block';
+                form.reset();
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Another Inquiry';
+            }
+        });
+    </script>
 
 </body>
 </html>
